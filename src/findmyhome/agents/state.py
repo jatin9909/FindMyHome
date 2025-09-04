@@ -93,7 +93,7 @@ class RecommendationState(TypedDict):
     graph_property_id_shown: Annotated[List[str], operator.add]
 
     query_enhancer: QueryEnhancerOutput
-    database_responses: Annotated[List[DatabaseResponse], operator.add]
+    database_responses: Annotated[List[List[DatabaseResponse]], operator.add]
     database_generated_query: SQLQuery
     database_property_id_shown: Annotated[PropertyIDList, operator.add]
 

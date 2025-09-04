@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     # Postgres (Neon)
     neon_url: str = Field(default_factory=lambda: os.getenv("NEON_URL", ""))
 
+    # Redis
+    redis_host: str = Field(default_factory=lambda: os.getenv("REDIS_HOST"))
+    redis_port: int = Field(default_factory=lambda: int(os.getenv("REDIS_PORT", "6379")))
+    redis_password: str = Field(default_factory=lambda: os.getenv("REDIS_PASSWORD"))
+
     class Config:
         env_prefix = "FINDMYHOME_"
         extra = "ignore"
@@ -60,7 +65,7 @@ def get_chat_model(temperature: float = 0.5):
         azure_endpoint=s.azure_endpoint,
         azure_deployment=s.azure_openai_deployment,
         openai_api_version=s.azure_openai_api_version,
-        temperature=temperature,
+        # temperature=temperature,
     )
 
 
@@ -88,6 +93,23 @@ def get_graph(enhanced_schema: bool = True):
         enhanced_schema=enhanced_schema,
     )
 
+def get_redis_checkpointer():
+    """Return a Redis checkpointer for conversation state persistence."""
+    from redis import Redis
+    from langgraph.checkpoint.redis import RedisSaver
+    
+    s = get_settings()
+    redis_client = Redis(
+                    host=s.redis_host,
+                    port=s.redis_port,
+                    decode_responses=True,
+                    username="default",
+                    password=s.redis_password,
+                )
+    
+    redis_saver = RedisSaver(redis_client=redis_client)
+    redis_saver.setup()
+    return redis_saver
 
 def get_pg_connection():
     import psycopg2

@@ -56,7 +56,8 @@ def query_correction_agent(state: RecommendationState):
             - `['Flat', 'Independent House', 'Villa', 'Studio']`
 
         4. If the user says "like the one you showed me earlier", then you need to transform the query to include the previous conditions.
-
+        5. Never set any value of property name and Neighborhood name in your generated text from user query.
+        6. Any free text will always be in description field of property.
         ---
 
         ### Output Format:

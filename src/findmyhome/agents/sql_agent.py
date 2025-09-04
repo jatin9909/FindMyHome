@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict, List
-
+from typing import List, Dict, Any, Optional, Union
+import numbers
 from langchain_core.messages import HumanMessage, SystemMessage
 from findmyhome.config import get_azure_openai_client, get_pg_connection, get_settings, get_chat_model, get_graph
 from .state import RecommendationState
@@ -17,43 +17,72 @@ def embed_query(text: str) -> List[float]:
         raise ValueError(f"Unexpected embedding dim {len(emb)} (expected {s.embed_dim})")
     return emb
 
+def _enhancer_to_dict(enhancer: Any) -> Dict[str, Any]:
+    if enhancer is None:
+        return {}
+    # pydantic v2 model
+    if hasattr(enhancer, "model_dump"):
+        return enhancer.model_dump()
+    # pydantic v1 model
+    if hasattr(enhancer, "dict"):
+        return enhancer.dict()
+    if isinstance(enhancer, dict):
+        return enhancer
+    return {}
 
 def query_database_agent(state: RecommendationState):
     k = 10
+    s = get_settings()
 
-    enhancer = state.get("query_enhancer")
-    # when produced by pydantic model, it has attributes
-    enhanced_user_query = getattr(enhancer, "enhanced_user_query", None) if enhancer else None
-    city = getattr(enhancer, "city", None)
-    has_balcony = getattr(enhancer, "has_balcony", None)
-    min_beds = getattr(enhancer, "min_beds", None)
-    max_price = getattr(enhancer, "max_price", None)
-    min_baths = getattr(enhancer, "min_baths", None)
-    min_area = getattr(enhancer, "min_area", None)
-    property_type = getattr(enhancer, "property_type", None)
-    room_type = getattr(enhancer, "room_type", None)
+    enh = _enhancer_to_dict(state.get("query_enhancer"))
+    enhanced_user_query: str = enh.get("enhanced_user_query") or ""
+    city: Optional[str]         = enh.get("city")
+    has_balcony: Optional[bool] = enh.get("has_balcony")
+    min_beds: Optional[int]     = enh.get("min_beds")
+    max_price: Optional[float]  = enh.get("max_price")
+    min_baths: Optional[int]    = enh.get("min_baths")
+    min_area: Optional[float]   = enh.get("min_area")
+    property_type: Optional[str]= enh.get("property_type")
+    room_type: Optional[str]    = enh.get("room_type")
 
     q_vec = embed_query(enhanced_user_query or "")
 
-    s = get_settings()
+    # ---- WHERE builder ----
     where: List[str] = []
-    params: list = [q_vec]
+    params: List[Any] = [q_vec]  # first %s used in SELECT score
+
     if city:
-        where.append('"cityName" ILIKE %s');     params.append(f"%{city}%")
+        where.append('"cityName" ILIKE %s')
+        params.append(f"%{city}%")
+
     if has_balcony is not None:
-        where.append('"hasBalcony" = %s');       params.append(bool(has_balcony))
-    if min_beds is not None:
-        where.append('beds >= %s');              params.append(int(min_beds))
-    if min_baths is not None:
-        where.append('baths >= %s');             params.append(int(min_baths))
-    if max_price is not None:
-        where.append('price <= %s');             params.append(float(max_price))
-    if min_area is not None:
-        where.append('"totalArea" >= %s');       params.append(float(min_area))
+        where.append('"hasBalcony" = %s')
+        params.append(bool(has_balcony))
+
+    if isinstance(min_beds, numbers.Number):
+        where.append('beds >= %s')
+        params.append(int(min_beds))
+
+    if isinstance(min_baths, numbers.Number):
+        where.append('baths >= %s')
+        params.append(int(min_baths))
+
+    if isinstance(max_price, numbers.Number):
+        where.append('price <= %s')
+        params.append(float(max_price))
+
+    if isinstance(min_area, numbers.Number):
+        where.append('"totalArea" >= %s')
+        params.append(float(min_area))
+
     if property_type:
-        where.append('property_type ILIKE %s');  params.append(f"%{property_type}%")
+        # you already normalize upstream; equality is cleaner than ILIKE if canonicalized
+        where.append('property_type = %s')
+        params.append(property_type)
+
     if room_type:
-        where.append('room_type ILIKE %s');      params.append(f"%{room_type}%")
+        where.append('room_type = %s')
+        params.append(room_type)
 
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
 
@@ -67,7 +96,7 @@ def query_database_agent(state: RecommendationState):
     {where_sql}
     ORDER BY description_embed <=> %s::float8[]::vector({s.embed_dim})
     LIMIT %s
-    """
+    """.strip()
 
     params_for_query = [params[0]]
     if len(params) > 1:
@@ -81,11 +110,12 @@ def query_database_agent(state: RecommendationState):
         generated_query = cur.mogrify(sql, params_for_query).decode("utf-8")
 
     recommended_ids = [row["id"] for row in results]
+    print("generated_query - ", generated_query)
 
     return {
         "database_generated_query": generated_query,
         "database_property_id_shown": recommended_ids,
-        "database_responses": results,
+        "database_responses": [results],
     }
 
 
@@ -251,7 +281,7 @@ Recommended properties to the user (de-duplicated combined list):
         "graph_property_id_shown": graph_prop_ids,
         "database_generated_query": generated_query_sql,
         "database_property_id_shown": recommended_ids_sql,
-        "database_responses": results_sql,
+        "database_responses": [results_sql],
         "turn_log": [
             {
                 "question": last_human_text,

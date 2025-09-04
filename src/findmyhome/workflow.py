@@ -14,7 +14,7 @@ from .agents.graph_agent import graph_db_agent
 from .agents.query_enhancer import query_enhancer_agent
 from .agents.sql_agent import query_database_agent, more_recommendation
 from .agents.accumulate import accumulative_query_agent
-
+from .config import get_redis_checkpointer
 
 def recommendation_agent(state: RecommendationState):
     # fan-out node placeholder (routes to both query_correction and query_enhancer)
@@ -68,7 +68,7 @@ def build_graph() -> StateGraph:
 
 
 def compile_workflow(checkpointer=None):
-    checkpointer = checkpointer or InMemorySaver()
+    checkpointer = checkpointer or get_redis_checkpointer()
     graph = build_graph()
-    return graph.compile(checkpointer=checkpointer)
+    return graph.compile(checkpointer=checkpointer) # here need to pass redis_saver
 

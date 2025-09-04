@@ -6,11 +6,15 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from findmyhome.config import get_chat_model
 from .state import RecommendationState
+from langgraph.prebuilt.chat_agent_executor import create_react_agent
 
 
 def accumulative_query_agent(state: RecommendationState):
-    db_results = state.get("database_responses", [])
-    graph_history = state.get("graph_raw_history", [])
+    db_responses_history = state.get("database_responses", [])
+    db_results = db_responses_history[-1] if db_responses_history else []
+    
+    graph_history_all = state.get("graph_raw_history", [])
+    graph_history = graph_history_all[-1][0] if graph_history_all else []
 
     graph_props_raw: List[Dict] = []
     for run in graph_history:

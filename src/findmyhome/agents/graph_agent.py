@@ -11,26 +11,45 @@ from langchain_neo4j import GraphCypherQAChain
 
 CYPHER_GENERATION_TEMPLATE = """Generate a single Cypher query for Neo4j.
 
-Rules:
+Rules (hard constraints):
 - Start with MATCH and end with `RETURN p`. No prose.
-- If the user mentions a property type word:
-    flat/apartment → PropertyType.name="Flat"
-    villa → "Villa"
-    studio → "Studio"
-    independent house → "Independent House"
-  Even if user mentions any other property type outside of the allowed property type then you need to convert that into one of the available property options with your best available knowledge.
-  Add an OF_TYPE match with that normalized value (do NOT treat it as free text).
+- NEVER use `p.name` in WHERE clauses or equality checks.
+  - Do not assign to `p.name`.
+  - Do not use `p.name = ...` or `toLower(p.name) CONTAINS ...`.
+- For free-text, USE ONLY `toLower(p.description) CONTAINS ...` and/or neighborhood names (`toLower(n.name) CONTAINS ...`) if you match a neighborhood node.
+- When combining free-text terms with other filters, ALWAYS parenthesize the free-text group:
+    WHERE ( ...free-text conditions joined by AND... ) AND ...other filters...
 
-- FREE-TEXT → DESCRIPTION RULE:
-  After normalizing any structured fields (city/neighborhood/property type/room type/price/area),
-  treat remaining words/phrases (including “near <place>”) as keywords and filter with:
-  (toLower(p.name) CONTAINS "<kw>" OR toLower(p.description) CONTAINS "<kw>")
-  If multiple keywords remain, join them with AND (each must match).
+Property type normalization:
+- If the user mentions a property type, normalize:
+    flat/apartment -> PropertyType.name = "Flat"
+    villa -> "Villa"
+    studio -> "Studio"
+    independent house -> "Independent House"
+- Add an OF_TYPE pattern with the normalized value:
+    (p:Property)-[:OF_TYPE]->(pt:PropertyType {{name:"<Normalized>"}})
 
-CITY NORMALIZATION & NEARBY MAPPING
-- Allowed cities: ['Chennai','Bangalore','Hyderabad','Mumbai','Thane','Kolkata','Pune','New Delhi']
-  (return ONLY one of these in the city field)
-- If the user mentions a locality that is effectively part of a metro region, map it to the nearest allowed city AND keep the mentioned locality as a free-text keyword (do NOT lose it).
+Structured filtering:
+- Cities allowed: ['Chennai','Bangalore','Hyderabad','Mumbai','Thane','Kolkata','Pune','New Delhi'].
+- Prefer graph relationships for locality/city:
+    (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)-[:PART_OF]->(c:City {{name:"<City>"}})
+  If only a city is given, match City directly as above.
+- Room type:
+    (p)-[:HAS_LAYOUT]->(rt:RoomType {{name:"<RoomType>"}})
+  If rooms count is given (e.g., 2 BHK), add `rt.rooms >= <min_rooms>` (or exact if specified).
+- Numeric filters (use only if present): 
+    p.price <= <max_price>, p.totalArea >= <min_area>, p.beds >= <min_beds>, p.baths >= <min_baths>
+- Balcony: if requested, include `p.hasBalcony = true`.
+
+Free-text mapping:
+- After extracting structured fields (city/neighborhood/property type/room type/price/area), treat remaining tokens (e.g., "near Hinjawadi", "IT city") as keywords.
+- Map metro/locality mentions to graph nodes when possible:
+    - Keep the original token as a free-text keyword (on description) AND, if it corresponds to a neighborhood, also match (n:Neighborhood {{name:"<Locality>"}}) or `toLower(n.name) CONTAINS "<locality_lower>"`.
+- Example free-text group form:
+    (toLower(p.description) CONTAINS "<kw1>" AND toLower(p.description) CONTAINS "<kw2>")
+
+Operator precedence:
+- When combining free-text with other constraints, wrap the free-text conditions in parentheses before adding AND constraints for city/price/etc.
 
 Schema:
 {schema}
