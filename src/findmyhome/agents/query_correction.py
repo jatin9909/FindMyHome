@@ -1,15 +1,26 @@
 from __future__ import annotations
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.runnables.config import RunnableConfig
 
 from findmyhome.config import get_chat_model
 from .state import QueryEnhancer, RecommendationState
+from ..memory import get_user_preferences_memory
 
 
-def query_correction_agent(state: RecommendationState):
+def query_correction_agent(state: RecommendationState, config: RunnableConfig):
     msgs = state.get("user_query", []) or []
     last_human_text: str = msgs[-1] if msgs else ""
     all_user_messages = msgs[:]
+
+    user_id = config.get("configurable", {}).get("user_id", "anonymous")
+
+    # Retrieve user preferences from memory
+    user_preferences = ""
+    if user_id != "anonymous":
+        prefs = get_user_preferences_memory(user_id)
+        if prefs:
+            user_preferences = f"\n\n### User's Saved Preferences:\n{prefs}\n"
 
     messages = [
         SystemMessage(content="You are a query correction agent responsible for mapping user queries to structured graph-compatible queries."),
@@ -19,8 +30,12 @@ def query_correction_agent(state: RecommendationState):
 
         Your job is to:
         - Interpret the **true user intent**, even if the original query is vague, informal, or uses colloquial terms.
+        - Use the user's saved preferences to keep the user preferences in mind, but the previous questions asked by user should be given priority (if present)because there user might change their preferences. 
         - Rewrite the query into a **clear, unambiguous version** that maps directly to the graph schema—making it easier for the graph query agent to generate an accurate Cypher query.
         - Ensure the rewritten query includes **explicit values for nodes and relationships** wherever possible.
+
+        User's Saved Preferences:
+        {user_preferences}
 
         ### Graph Schema Overview:
 

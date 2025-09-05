@@ -1,15 +1,26 @@
 from __future__ import annotations
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.runnables.config import RunnableConfig
 
 from findmyhome.config import get_chat_model
 from .state import QueryEnhancer, RecommendationState
+from ..memory import get_user_preferences_memory
 
 
-def query_enhancer_agent(state: RecommendationState):
+def query_enhancer_agent(state: RecommendationState, config: RunnableConfig):
     msgs = state.get("user_query", []) or []
     last_human_text: str = msgs[-1] if msgs else ""
     all_user_messages = msgs[:]
+
+    user_id = config.get("configurable", {}).get("user_id", "anonymous")
+
+    # Retrieve user preferences from memory
+    user_preferences = ""
+    if user_id != "anonymous":
+        prefs = get_user_preferences_memory(user_id)
+        if prefs:
+            user_preferences = f"\n\n### User's Saved Preferences:\n{prefs}\nUse these preferences to fill in missing details in the query.\n"
 
     messages = [
         SystemMessage(content="You are a query enhancer agent responsible for enhancing and structuring the user query."),
@@ -22,6 +33,10 @@ You will receive a natural language user query along with the previous conversat
 - Rewrite the query into a **clear, unambiguous, enhanced version** that makes explicit what the user wants.
 - Extract values and normalize them to match the **database schema** below.
 - Always return a structured response with all required keys. If the user did not specify a value, set it to `None`.
+- Use the user's saved preferences to keep the user preferences in mind, but the previous questions asked by user should be given priority (if present)because there user might change their preferences. 
+
+User's Saved Preferences:
+{user_preferences}
 
 ---
 
