@@ -3,19 +3,9 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, Union
 import numbers
 from langchain_core.messages import HumanMessage, SystemMessage
-from findmyhome.config import get_azure_openai_client, get_pg_connection, get_settings, get_chat_model, get_graph
+from findmyhome.config import get_azure_openai_client, get_pg_connection, get_settings, get_chat_model, get_graph, embed_query
 from .state import RecommendationState
 
-
-def embed_query(text: str) -> List[float]:
-    """Embed a single query string with Azure OpenAI (deployment from settings)."""
-    client = get_azure_openai_client()
-    s = get_settings()
-    resp = client.embeddings.create(model=s.azure_embed_deployment, input=[text])
-    emb = resp.data[0].embedding
-    if len(emb) != s.embed_dim:
-        raise ValueError(f"Unexpected embedding dim {len(emb)} (expected {s.embed_dim})")
-    return emb
 
 def _enhancer_to_dict(enhancer: Any) -> Dict[str, Any]:
     if enhancer is None:

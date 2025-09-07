@@ -55,6 +55,15 @@ class UserManager:
             user = User(email=email, status=UserStatus.PENDING_APPROVAL)
             session.add(user)
             session.flush()
+            # Access attributes to ensure they're loaded before session closes
+            _ = user.id
+            _ = user.email
+            _ = user.status
+            _ = user.created_at
+            _ = user.approved_at
+            
+            # Detach from session to prevent lazy loading issues
+            session.expunge(user)
             return user
     
     @staticmethod
@@ -70,6 +79,15 @@ class UserManager:
             user.status = UserStatus.APPROVED
             user.approved_at = datetime.utcnow()
             session.flush()
+            # Access attributes to ensure they're loaded before session closes
+            _ = user.id
+            _ = user.email
+            _ = user.status
+            _ = user.created_at
+            _ = user.approved_at
+            
+            # Detach from session to prevent lazy loading issues
+            session.expunge(user)
             return user
     
     @staticmethod
@@ -87,6 +105,15 @@ class UserManager:
             user.set_password(password)
             user.status = UserStatus.ACTIVE
             session.flush()
+            # Access attributes to ensure they're loaded before session closes
+            _ = user.id
+            _ = user.email
+            _ = user.status
+            _ = user.created_at
+            _ = user.approved_at
+            
+            # Detach from session to prevent lazy loading issues
+            session.expunge(user)
             return user
     
     @staticmethod
@@ -101,13 +128,35 @@ class UserManager:
             
             user.last_login = datetime.utcnow()
             session.flush()
+            # Access attributes to ensure they're loaded before session closes
+            _ = user.id
+            _ = user.email
+            _ = user.status
+            _ = user.created_at
+            _ = user.approved_at
+            
+            # Detach from session to prevent lazy loading issues
+            session.expunge(user)
             return user
     
     @staticmethod
     def get_pending_approvals() -> List[User]:
         """Get all users pending approval (admin function)"""
         with get_db_session() as session:
-            return session.query(User).filter(User.status == UserStatus.PENDING_APPROVAL).all()
+            users = session.query(User).filter(User.status == UserStatus.PENDING_APPROVAL).all()
+            
+            # Access attributes for all users to ensure they're loaded before session closes
+            for user in users:
+                _ = user.id
+                _ = user.email
+                _ = user.status
+                _ = user.created_at
+                _ = user.approved_at
+                
+                # Detach from session to prevent lazy loading issues
+                session.expunge(user)
+            
+            return users
 
 class ChatSessionManager:
     @staticmethod
@@ -121,15 +170,35 @@ class ChatSessionManager:
             )
             session.add(chat_session)
             session.flush()
+            # Access attributes to ensure they're loaded before session closes
+            _ = chat_session.thread_id
+            _ = chat_session.title
+            _ = chat_session.created_at
+            _ = chat_session.last_active
+            
+            # Detach from session to prevent lazy loading issues
+            session.expunge(chat_session)
             return chat_session
     
     @staticmethod
     def get_user_sessions(user_id: str) -> List[ChatSession]:
         """Get all chat sessions for a user"""
         with get_db_session() as session:
-            return session.query(ChatSession).filter(
+            sessions = session.query(ChatSession).filter(
                 ChatSession.user_id == user_id
             ).order_by(ChatSession.last_active.desc()).all()
+        
+            # Access attributes for all sessions to ensure they're loaded before session closes
+            for session_obj in sessions:
+                _ = session_obj.thread_id
+                _ = session_obj.title
+                _ = session_obj.created_at
+                _ = session_obj.last_active
+                
+                # Detach from session to prevent lazy loading issues
+                session.expunge(session_obj)
+            
+            return sessions
     
     @staticmethod
     def update_session_activity(thread_id: str):

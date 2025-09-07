@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import jwt
+from jwt import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import HTTPException, Depends, Header
@@ -31,9 +32,9 @@ def verify_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.JWTError:
+    except InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
@@ -45,6 +46,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         user = session.query(User).filter(User.id == payload["user_id"]).first()
         if not user or user.status != UserStatus.ACTIVE:
             raise HTTPException(status_code=401, detail="User not found or inactive")
+        # Access attributes to ensure they're loaded before session closes
+        _ = user.id
+        _ = user.email
+        _ = user.status
+        _ = user.created_at
+        _ = user.approved_at
+        
+        # Detach from session to prevent lazy loading issues
+        session.expunge(user)
         return user
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:

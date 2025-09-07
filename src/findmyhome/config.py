@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, List
+import math
 
 from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings
 # from neo4j.debug import watch
+import logging
 
+# Set up logger
+logger = logging.getLogger(__name__)
 
 # watch("neo4j")
 
@@ -84,7 +88,6 @@ def get_azure_openai_client():
 def get_graph(enhanced_schema: bool = True):
     from langchain_neo4j import Neo4jGraph
     s = get_settings()
-    print("s - ", s)
     return Neo4jGraph(
         url=s.neo4j_url,
         username=s.neo4j_username,
@@ -118,3 +121,19 @@ def get_pg_connection():
         raise RuntimeError("NEON_URL not configured; set it or use a .env file")
     return psycopg2.connect(s.neon_url)
 
+def embed_query(text: str) -> List[float]:
+    """Embed a single query string with Azure OpenAI (deployment from settings)."""
+    client = get_azure_openai_client()
+    s = get_settings()
+    resp = client.embeddings.create(model=s.azure_embed_deployment, input=[text])
+    emb = resp.data[0].embedding
+    if len(emb) != s.embed_dim:
+        raise ValueError(f"Unexpected embedding dim {len(emb)} (expected {s.embed_dim})")
+    
+    # Validate embedding values
+    for i, val in enumerate(emb):
+        if not isinstance(val, (int, float)) or math.isnan(val) or math.isinf(val):
+            logger.warning(f"Invalid embedding value at index {i}: {val}")
+            emb[i] = 0.0
+    
+    return emb

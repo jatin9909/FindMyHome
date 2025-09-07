@@ -13,7 +13,10 @@ from ..models import (
     UserResponse, ChatSessionCreate, ChatSessionResponse, UserStatus
 )
 from ..memory import UserPreferences, store_user_preferences, get_user_preferences_memory
+import logging
 
+# create logger
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="FindMyHome API")
 workflow = compile_workflow()
