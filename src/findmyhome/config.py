@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     redis_port: int = Field(default_factory=lambda: int(os.getenv("REDIS_PORT", "6379")))
     redis_password: str = Field(default_factory=lambda: os.getenv("REDIS_PASSWORD"))
 
+    # Admin
+    admin_email: str = Field(default_factory=lambda: os.getenv("ADMIN_EMAIL"))
+
     class Config:
         env_prefix = "FINDMYHOME_"
         extra = "ignore"

@@ -133,8 +133,8 @@ def similar_memory_exists(
         )
         
         # Use same string filter approach
-        filter_str = f"@user_id:{{{user_id}}} @memory_type:{{{memory_type.value}}}"
-        vector_query.set_filter(filter_str)
+        # filter_str = f"@user_id:{{{user_id}}} @memory_type:{{{memory_type.value}}}"
+        # vector_query.set_filter(filter_str)
         
         results = long_term_memory_index.query(vector_query)
         return len(results) > 0
@@ -181,7 +181,7 @@ def retrieve_memories(
     query: str,
     memory_type: Union[Optional[MemoryType], List[MemoryType]] = None,
     user_id: str = SYSTEM_USER_ID,
-    distance_threshold: float = 0.3,
+    distance_threshold: float = 0.5,
     limit: int = 5,
 ) -> List[StoredMemory]:
     """Retrieve relevant memories using vector similarity search."""
@@ -204,20 +204,20 @@ def retrieve_memories(
         )
 
         # Build simple string filters (this approach works!)
-        base_filters = [f"@user_id:{{{user_id or SYSTEM_USER_ID}}}"]
+        # base_filters = [f"@user_id:{{{user_id or SYSTEM_USER_ID}}}"]
 
-        if memory_type:
-            if isinstance(memory_type, list):
-                vals = [mt.value if hasattr(mt, "value") else str(mt) for mt in memory_type]
-                base_filters.append(f"@memory_type:{{{'|'.join(vals)}}}")
-            else:
-                mt_val = memory_type.value if hasattr(memory_type, "value") else str(memory_type)
-                base_filters.append(f"@memory_type:{{{mt_val}}}")
+        # if memory_type:
+        #     if isinstance(memory_type, list):
+        #         vals = [mt.value if hasattr(mt, "value") else str(mt) for mt in memory_type]
+        #         base_filters.append(f"@memory_type:{{{'|'.join(vals)}}}")
+        #     else:
+        #         mt_val = memory_type.value if hasattr(memory_type, "value") else str(memory_type)
+        #         base_filters.append(f"@memory_type:{{{mt_val}}}")
 
         # Set the filter using string approach
-        filter_str = " ".join(base_filters)
-        logger.info(f"Using filter: {filter_str}")
-        vector_query.set_filter(filter_str)
+        # filter_str = " ".join(base_filters)
+        # logger.info(f"Using filter: {filter_str}")
+        # vector_query.set_filter(filter_str)
 
         results = long_term_memory_index.query(vector_query)
         logger.info(f"Got {len(results)} results with filters")

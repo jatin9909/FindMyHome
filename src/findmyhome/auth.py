@@ -60,7 +60,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     """Require admin privileges (you can implement admin logic)"""
     # For now, you can use a specific admin email or add admin flag to User model
-    admin_emails = ["admin@findmyhome.com"]  # Configure in environment
-    if current_user.email not in admin_emails:
+    admin_emails = get_settings().admin_email
+    # Configure in environment
+    if current_user.email.strip().lower() != admin_emails.strip().lower():
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return current_user 

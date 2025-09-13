@@ -184,3 +184,54 @@ def get_my_preferences(current_user: User = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Error retrieving preferences: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve preferences")
+    
+@app.get("/initial-preferences")
+def get_initial_preferences(
+    thread_id: str | None = None,
+    current_user: User = Depends(get_current_user),
+):
+    """Seed a conversation with recommendations based on saved preferences.
+
+    - Reuses the provided `thread_id` if present; otherwise creates a new chat session.
+    - Builds a neutral seed query using the user's long-term preferences (if any).
+    - Invokes the workflow so the frontend can display initial recommendations.
+    - Returns the `thread_id` to be reused in subsequent `/invoke` calls unless the user creates a new chat.
+    """
+    try:
+        # Fetch saved preferences (may be None)
+        preferences = get_user_preferences_memory(current_user.id)
+
+        # Decide thread: reuse or create
+        if thread_id:
+            ChatSessionManager.update_session_activity(thread_id)
+            active_thread_id = thread_id
+        else:
+            chat_session = ChatSessionManager.create_session(current_user.id, title="Initial Recommendations")
+            active_thread_id = chat_session.thread_id
+
+        # Seed query using preferences if available
+        if preferences:
+            seed_query = (
+                "Please recommend properties based on my preferences.\n"
+                f"{preferences}\n"
+                "Return a helpful list of options."
+            )
+        else:
+            # Fallback: a neutral query that still yields results via vector search
+            seed_query = (
+                "Recommend a variety of residential properties across the supported cities, "
+                "prioritizing broadly appealing options."
+            )
+
+        config_dict = {"configurable": {"thread_id": active_thread_id, "user_id": current_user.id}}
+        state = workflow.invoke({"user_query": [seed_query]}, config=config_dict)
+
+        return {
+            "state": state,
+            "thread_id": active_thread_id,
+            "user_id": current_user.id,
+            "used_preferences": bool(preferences),
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving initial preferences: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get initial recommendations")
