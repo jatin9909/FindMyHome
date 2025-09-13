@@ -1,0 +1,17 @@
+.git
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+*.sqlite3
+*.db
+imgs/
+notebook/
+.vscode/
+.idea/
+dist/
+build/
+**/.ipynb_checkpoints/
