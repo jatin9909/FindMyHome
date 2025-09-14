@@ -58,6 +58,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'findmyhome'
-          slot-name: 'Production'
           images: 'findmyhome.azurecr.io/findmyhome:${{ github.sha }}'
           
