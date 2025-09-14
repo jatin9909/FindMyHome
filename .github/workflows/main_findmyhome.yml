@@ -58,5 +58,6 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'findmyhome'
+          resource-group-name: 'azure-for-students'
           images: 'findmyhome.azurecr.io/findmyhome:${{ github.sha }}'
           
