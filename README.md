@@ -1,78 +1,92 @@
 # FindMyHome
-A recommendation system to recommend properties to the user using GraphDB.
+A Multi‑agent based property recommendation system using LangGraph, Neo4j (Graph DataBase), Postgres, Azure OpenAI, and Redis-backed long‑term, short-term memory
 
-## GraphDB Schema:
-Node properties: <br>
-Property {id: STRING, name: STRING, totalArea: FLOAT, pricePerSqft: FLOAT, price: FLOAT, beds: INTEGER, baths: INTEGER, hasBalcony: BOOLEAN, description: STRING} <br>
-Neighborhood {name: STRING} <br>
-City {name: STRING} <br>
-PropertyType {name: STRING} <br>
-RoomType {name: STRING, rooms: INTEGER} <br>
+## Tech Stack
+• Orchestration: LangGraph
+• LLMs: Azure OpenAI (chat + embeddings) 
+• Graph DB: Neo4j
+• SQL DB: Postgres/Neon; vector similarity using pgvector-compatible array casting
+• Persistence: SQLAlchemy for users/chats; Redis for checkpoints
 
-Relationship properties: <br>
-The relationships: <br>
-(:Property)-[:IN_NEIGHBORHOOD]->(:Neighborhood) <br>
-(:Property)-[:OF_TYPE]->(:PropertyType) <br>
-(:Property)-[:HAS_LAYOUT]->(:RoomType) <br>
-(:Neighborhood)-[:PART_OF]->(:City) <br>
-
-
-![Neo_4j_graph_database_schema.png](imgs%2FUntitled%20Diagram%20%281%29.png)
+## Architecture
+• Multi-agent graph (LangGraph) in src/findmyhome/workflow.py:
+  • input_agent → validates domain relevance
+  • supervisor → routes to recommendation, discussion, or more results
+  • query_correction → normalizes user intent for graph search
+  • query_enhancer → extracts structured filters for SQL/vector search
+  • graph_db_agent → generates Cypher and queries Neo4j
+  • sql_agent (query_database_agent) → queries Postgres with filters + embedding similarity
+  • accumulative_query_results → merges/dedupes and summarizes unified recommendations
+  • discussion_agent → answers follow‑ups about shown properties
 
 The Multiagent Architecture Schema using Langgraph
 ![langgraph_multiagent_structure.png](imgs/langgraph_multiagent_structure.png)
 
-## New App Structure
+## GraphDB Schema:
+Node properties: <br>
 
-- Package: `src/findmyhome/`
-  - `config.py`: Env-driven settings and clients (Azure OpenAI, Neo4j, Postgres)
-  - `workflow.py`: LangGraph state machine assembly and compiler
-  - `agents/`: All agents split by concern (input, supervisor, graph, SQL, etc.)
-  - `cli.py`: CLI entrypoints (`findmyhome chat`, `findmyhome query`)
-  - `api/server.py`: FastAPI app (`POST /invoke`)
+• Property: id, name, totalArea, pricePerSqft, price, beds, baths, hasBalcony, description
+• Neighborhood: name
+• City: name
+• PropertyType: name
+• RoomType: name, rooms
+
+Relationships: <br>
+
+• (:Property)-[:IN_NEIGHBORHOOD]->(:Neighborhood)
+• (:Property)-[:OF_TYPE]->(:PropertyType)
+• (:Property)-[:HAS_LAYOUT]->(:RoomType)
+• (:Neighborhood)-[:PART_OF]->(:City)
+
+![Neo_4j_graph_database_schema.png](imgs%2FUntitled%20Diagram%20%281%29.png)
+
 
 ## Setup
 
 1) Python 3.10+ and a virtualenv
 2) Copy `.env.example` to `.env` and fill values (Azure OpenAI, Neo4j, Postgres)
-3) Install:
+3) Install using requirements.txt:
+```
+pip install -r requirements.txt
+```
 
-```
-pip install -e .[dev]
-```
 
 ## Running
 
-- CLI interactive chat:
-Inside src folder
+- CLI (interactive chat):
+```
+python -m findmyhome.cli chat --thread-id 1 --user-id 2
+# or if installed as script
+findmyhome chat --thread-id 1 --user-id 2
+```
 
-python -m findmyhome.cli chat
+- CLI (one-shot):
 ```
-findmyhome chat
-```
-
-- One-shot query (prints final state JSON):
-python -m findmyhome.cli query "show me 2 bhk in New Delhi under 1 cr"
-```
+python -m findmyhome.cli query "show me 2 bhk in New Delhi under 1 cr" --thread-id 1 --user-id 2
+# or
 findmyhome query "show me 2 bhk in New Delhi under 1 cr"
 ```
 
 - API server:
-
 ```
 uvicorn findmyhome.api.server:app --reload
 ```
 
-Then:
-
+- Docker
+Build and run:
 ```
-curl -X POST http://127.0.0.1:8000/invoke \
-  -H 'Content-Type: application/json' \
-  -d '{"user_query":"show me villas in Pune"}'
+docker build -t findmyhome .
+docker run -p 8000:8000 --env-file .env findmyhome
 ```
 
-## Notes
+- CI/CD
+GitHub Actions at .github/workflows/main_findmyhome.yml:
 
-- The code mirrors the notebook’s multi-agent flow with LangGraph, but replaces Colab secrets with environment variables.
-- Ensure your Postgres has a `properties` table with `description_embed` as a `vector(EMBED_DIM)` column and proper columns per the schema.
-- Neo4j connection must point to your graph with the schema described above.
+• Builds and pushes image to Azure Container Registry
+• Deploys to Azure Web App findmyhome
+
+## Example Queries
+• “2 BHK in New Delhi under 1 crore with balcony”
+• “Villa in Bangalore with 1200+ sq ft”
+• “More properties like the previous ones”
+• “What was the price per sqft of the second option?” (discussion mode)
