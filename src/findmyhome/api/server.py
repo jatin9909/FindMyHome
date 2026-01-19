@@ -14,11 +14,17 @@ from ..models import (
 )
 from ..memory import UserPreferences, store_user_preferences, get_user_preferences_memory
 import logging
+import os
 
 # create logger
 logger = logging.getLogger(__name__)
+is_prod = os.getenv("ENV")
 
-app = FastAPI(title="FindMyHome API")
+app = FastAPI(title="FindMyHome API",
+              docs_url=None if is_prod else "/docs",
+              redoc_url=None if is_prod else "/redoc",
+              openapi_url=None if is_prod else "/openapi.json")
+
 workflow = compile_workflow()
 
 # Initialize database tables on startup
