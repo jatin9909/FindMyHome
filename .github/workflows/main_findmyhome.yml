@@ -9,12 +9,18 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
       name: 'production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    env:
+      AZURE_WEBAPP_NAME: findmyhome
+      AZURE_RESOURCE_GROUP: azure-for-students
 
     steps:
     - uses: actions/checkout@v4
@@ -25,11 +31,17 @@ jobs:
           -x ".git/*" ".github/*" ".venv/*" "__pycache__/*" "*.pyc" \
           "notebook/*" "imgs/*" ".env"
 
-    - name: Deploy to Azure Web App (code)
-      id: deploy-to-webapp
-      uses: azure/webapps-deploy@v2
+    - name: Log in to Azure (OIDC)
+      uses: azure/login@v2
       with:
-        app-name: 'findmyhome'
-        slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_cfdde810c0e44666a3f68759b49ab062 }}
-        package: release.zip
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Deploy to Azure Web App (code)
+      run: |
+        az webapp deploy \
+          --resource-group "$AZURE_RESOURCE_GROUP" \
+          --name "$AZURE_WEBAPP_NAME" \
+          --type zip \
+          --src-path release.zip
