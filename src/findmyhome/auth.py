@@ -12,7 +12,7 @@ from .config import get_settings
 
 security = HTTPBearer()
 
-SECRET_KEY = "your-secret-key"  # Move to environment variables
+SECRET_KEY = get_settings().secret_key  # Move to environment variables
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
