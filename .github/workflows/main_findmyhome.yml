@@ -16,6 +16,8 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: 'production'
     env:
       AZURE_WEBAPP_NAME: findmyhome
       AZURE_RESOURCE_GROUP: azure-for-students
