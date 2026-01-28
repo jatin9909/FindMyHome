@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid 
 from datetime import datetime
@@ -25,6 +26,14 @@ app = FastAPI(title="FindMyHome API",
               docs_url=None if is_prod else "/docs",
               redoc_url=None if is_prod else "/redoc",
               openapi_url=None if is_prod else "/openapi.json")
+
+if not is_prod:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 workflow = compile_workflow()
