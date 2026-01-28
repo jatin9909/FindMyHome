@@ -52,6 +52,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         _ = user.status
         _ = user.created_at
         _ = user.approved_at
+        _ = user.num_of_queries
         
         # Detach from session to prevent lazy loading issues
         session.expunge(user)

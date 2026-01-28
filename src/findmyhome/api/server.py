@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 import uuid 
 from datetime import datetime
+import os
 
 from ..workflow import compile_workflow
 from ..auth import get_current_user, require_admin, create_access_token
@@ -25,7 +26,9 @@ app = FastAPI(title="FindMyHome API",
               redoc_url=None if is_prod else "/redoc",
               openapi_url=None if is_prod else "/openapi.json")
 
+
 workflow = compile_workflow()
+MAX_USER_QUERIES = 6
 
 # Initialize database tables on startup
 @app.on_event("startup")
@@ -87,6 +90,16 @@ def login(request: LoginRequest):
 @app.post("/invoke")
 def invoke(req: InvokeRequest, current_user: User = Depends(get_current_user)):
     """Main chat interface - requires authentication"""
+    try:
+        UserManager.check_and_increment_queries(current_user.id, MAX_USER_QUERIES)
+    except ValueError as e:
+        if str(e) == "Query limit reached":
+            raise HTTPException(
+                status_code=429,
+                detail="You have exhausted your maximum attempt.",
+            )
+        raise HTTPException(status_code=404, detail=str(e))
+
     thread_id = req.thread_id or str(uuid.uuid4())
     
     # If no thread_id provided, create a new chat session

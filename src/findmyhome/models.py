@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import Column, String, DateTime, Boolean, create_engine, Text
+from sqlalchemy import Column, String, DateTime, Boolean, create_engine, Text, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -29,6 +29,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     approved_at = Column(DateTime, nullable=True)
     last_login = Column(DateTime, nullable=True)
+    num_of_queries = Column(Integer, default=0, nullable=False)
     
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)

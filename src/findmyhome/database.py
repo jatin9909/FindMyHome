@@ -36,6 +36,25 @@ def get_db_session():
 
 class UserManager:
     @staticmethod
+    def check_and_increment_queries(user_id: str, max_queries: int) -> int:
+        """Increment user query count if under the limit and return new count."""
+        with get_db_session() as session:
+            user = session.query(User).filter(User.id == user_id).first()
+            if not user:
+                raise ValueError("User not found")
+
+            current_count = user.num_of_queries or 0
+            if current_count >= max_queries:
+                raise ValueError("Query limit reached")
+
+            user.num_of_queries = current_count + 1
+            session.flush()
+            new_count = user.num_of_queries
+
+            session.expunge(user)
+            return new_count
+
+    @staticmethod
     def request_approval(email: str, reason: str = None) -> User:
         """Submit email for approval"""
         with get_db_session() as session:

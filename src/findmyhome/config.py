@@ -51,7 +51,6 @@ class Settings(BaseSettings):
 
     # Admin
     admin_email: str = Field(default_factory=lambda: os.getenv("ADMIN_EMAIL"))
-    secret_key: str = Field(default_factory=lambda: os.getenv("SECRET_KEY"))
 
     class Config:
         env_prefix = "FINDMYHOME_"
