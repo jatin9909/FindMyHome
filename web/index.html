@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en" data-api-base="http://localhost:8000">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FindMyHome | Access</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="badge">FindMyHome beta</div>
+        <h1>Get invited to the smarter way to shortlist homes.</h1>
+        <p>
+          Request access with your email. Once approved, you can create your
+          account and unlock the property concierge.
+        </p>
+        <div class="hero-grid">
+          <article class="hero-card">
+            <h3>Human-first recommendations</h3>
+            <p>We keep the shortlist focused, clear, and easy to compare.</p>
+          </article>
+          <article class="hero-card">
+            <h3>Built for real decisions</h3>
+            <p>Share preferences once and let the system refine the search.</p>
+          </article>
+        </div>
+        <div class="hero-footer">
+          Need help? Email the admin after you request access.
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-header">
+          <h2>Authorization</h2>
+          <p>Start with your email. We will guide you through approval, signup, and login.</p>
+        </header>
+
+        <div class="stepper" role="list">
+          <div class="step step--active" data-step="request" role="listitem">
+            <span>1</span>
+            <div>
+              <strong>Request</strong>
+              <small>Ask for access</small>
+            </div>
+          </div>
+          <div class="step" data-step="signup" role="listitem">
+            <span>2</span>
+            <div>
+              <strong>Signup</strong>
+              <small>Create a password</small>
+            </div>
+          </div>
+          <div class="step" data-step="login" role="listitem">
+            <span>3</span>
+            <div>
+              <strong>Login</strong>
+              <small>Enter your account</small>
+            </div>
+          </div>
+        </div>
+
+        <div id="status" class="status is-hidden" role="status" aria-live="polite"></div>
+
+        <form id="request-form" data-panel="request" class="panel-form">
+          <label class="field">
+            <span>Email</span>
+            <input id="request-email" type="email" placeholder="name@email.com" required />
+          </label>
+          <label class="field">
+            <span>Reason (optional)</span>
+            <textarea id="request-reason" rows="3" placeholder="Tell us why you want access."></textarea>
+          </label>
+          <div class="actions">
+            <button type="submit" class="btn">Request access</button>
+            <button type="button" id="check-status" class="btn ghost is-hidden">Check status</button>
+          </div>
+          <button type="button" id="switch-login" class="link-button">
+            Already have access? Go to login
+          </button>
+        </form>
+
+        <form id="signup-form" data-panel="signup" class="panel-form is-hidden">
+          <label class="field">
+            <span>Approved email</span>
+            <input id="signup-email" type="email" readonly />
+          </label>
+          <label class="field">
+            <span>Create password</span>
+            <input id="signup-password" type="password" minlength="8" required />
+          </label>
+          <label class="field">
+            <span>Confirm password</span>
+            <input id="signup-confirm" type="password" minlength="8" required />
+          </label>
+          <div class="actions">
+            <button type="submit" class="btn">Create account</button>
+            <button type="button" id="back-request" class="btn ghost">Change email</button>
+          </div>
+        </form>
+
+        <form id="login-form" data-panel="login" class="panel-form is-hidden">
+          <label class="field">
+            <span>Email</span>
+            <input id="login-email" type="email" />
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input id="login-password" type="password" required />
+          </label>
+          <div class="actions">
+            <button type="submit" class="btn">Log in</button>
+            <button type="button" id="login-back" class="btn ghost">Change email</button>
+          </div>
+        </form>
+
+        <section id="app-panel" data-panel="app" class="app-panel is-hidden">
+          <div class="app-header">
+            <div>
+              <h3>You are in.</h3>
+              <p id="app-email">Loading profile...</p>
+            </div>
+            <button type="button" id="logout" class="btn ghost">Log out</button>
+          </div>
+          <div class="app-card">
+            <h4>Main app UI</h4>
+            <p>This is a placeholder. Next we can build the search + chat interface.</p>
+            <button type="button" id="refresh-profile" class="btn ghost">Refresh profile</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
