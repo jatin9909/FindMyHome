@@ -31,6 +31,14 @@ workflow = compile_workflow()
 MAX_USER_QUERIES = 6
 
 # Initialize database tables on startup
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
+
 @app.on_event("startup")
 async def startup_event():
     create_tables()
