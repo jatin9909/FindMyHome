@@ -57,6 +57,9 @@ class InvokeRequest(BaseModel):
     user_query: str
     thread_id: str = None
 
+class InitialPreferencesRequest(BaseModel):
+    thread_id: str | None = None
+
 # Public endpoints (no authentication required)
 
 @app.post("/request-approval")
@@ -221,9 +224,10 @@ def get_my_preferences(current_user: User = Depends(get_current_user)):
         logger.error(f"Error retrieving preferences: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve preferences")
     
-@app.get("/initial-preferences")
+
+@app.post("/initial-preferences")
 def get_initial_preferences(
-    thread_id: str | None = None,
+    request: InitialPreferencesRequest,
     current_user: User = Depends(get_current_user),
 ):
     """Seed a conversation with recommendations based on saved preferences.
@@ -238,9 +242,9 @@ def get_initial_preferences(
         preferences = get_user_preferences_memory(current_user.id)
 
         # Decide thread: reuse or create
-        if thread_id:
-            ChatSessionManager.update_session_activity(thread_id)
-            active_thread_id = thread_id
+        if request.thread_id:
+            ChatSessionManager.update_session_activity(request.thread_id)
+            active_thread_id = request.thread_id
         else:
             chat_session = ChatSessionManager.create_session(current_user.id, title="Initial Recommendations")
             active_thread_id = chat_session.thread_id

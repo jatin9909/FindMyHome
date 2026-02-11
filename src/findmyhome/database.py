@@ -14,7 +14,14 @@ def get_database_url():
     settings = get_settings()
     return settings.neon_url
 
-engine = create_engine(get_database_url())
+
+engine = create_engine(
+    get_database_url(),
+    pool_pre_ping=True,      # detects dead connections and reconnects
+    pool_recycle=1800,       # optional: recycle every 30 min
+    pool_size=5,             # keep small for serverless db
+    max_overflow=0,
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def create_tables():

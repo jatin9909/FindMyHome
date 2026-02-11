@@ -3,17 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FindMyHome | Access</title>
+    <title>FindMyHome | Early access</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="page">
       <section class="hero">
-        <div class="badge">FindMyHome beta</div>
-        <h1>Get invited to the smarter way to shortlist homes.</h1>
+        <div class="badge">FindMyHome Early access</div>
+        <h1>Find your next home faster without endless searching.</h1>
         <p>
-          Request access with your email. Once approved, you can create your
-          account and unlock the property concierge.
+          Tell us what you’re looking for. We shortlist homes based on your preferences and refine recommendations as you explore.
         </p>
         <div class="hero-grid">
           <article class="hero-card">
@@ -123,14 +122,157 @@
             <button type="button" id="logout" class="btn ghost">Log out</button>
           </div>
           <div class="app-card">
-            <h4>Main app UI</h4>
-            <p>This is a placeholder. Next we can build the search + chat interface.</p>
+            <h4>Personalize your recommendations</h4>
+            <p>
+              Share your budget, area range, and preferred cities. We will use this once to seed your first
+              recommendations.
+            </p>
             <button type="button" id="refresh-profile" class="btn ghost">Refresh profile</button>
+          </div>
+          <div class="app-flow">
+            <section class="app-section" id="preferences-section" data-app-panel="preferences">
+              <h4>Preferences</h4>
+              <p id="preferences-note" class="app-note">
+                No chats yet. Save your preferences to start recommendations.
+              </p>
+              <form id="preferences-form" class="panel-form">
+                <div class="preferences-grid">
+                  <label class="field">
+                    <span>Min price (Rs.)</span>
+                    <input
+                      id="min-price"
+                      type="number"
+                      min="55000"
+                      max="840000000"
+                      step="1000"
+                      placeholder="55000"
+                      required
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Max price (Rs.)</span>
+                    <input
+                      id="max-price"
+                      type="number"
+                      min="55000"
+                      max="840000000"
+                      step="1000"
+                      placeholder="840000000"
+                      required
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Min area (sq ft)</span>
+                    <input
+                      id="min-area"
+                      type="number"
+                      min="70"
+                      max="35000"
+                      step="10"
+                      placeholder="70"
+                      required
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Max area (sq ft)</span>
+                    <input
+                      id="max-area"
+                      type="number"
+                      min="70"
+                      max="35000"
+                      step="10"
+                      placeholder="35000"
+                      required
+                    />
+                  </label>
+                </div>
+                <p class="field-hint">Price range: 55000 to 840000000. Area range: 70 to 35000 sq ft.</p>
+                <label class="field">
+                  <span>Preferred cities</span>
+                  <div id="preferred-cities" class="city-options">
+                    <label class="city-option">
+                      <input type="checkbox" value="Thane" />
+                      <span>Thane</span>
+                    </label>
+                    <label class="city-option">
+                      <input type="checkbox" value="Bangalore" />
+                      <span>Bangalore</span>
+                    </label>
+                    <label class="city-option">
+                      <input type="checkbox" value="Mumbai" />
+                      <span>Mumbai</span>
+                    </label>
+                    <label class="city-option">
+                      <input type="checkbox" value="New Delhi" />
+                      <span>New Delhi</span>
+                    </label>
+                    <label class="city-option">
+                      <input type="checkbox" value="Kolkata" />
+                      <span>Kolkata</span>
+                    </label>
+                    <label class="city-option">
+                      <input type="checkbox" value="Chennai" />
+                      <span>Chennai</span>
+                    </label>
+                    <label class="city-option">
+                      <input type="checkbox" value="Pune" />
+                      <span>Pune</span>
+                    </label>
+                    <label class="city-option">
+                      <input type="checkbox" value="Hyderabad" />
+                      <span>Hyderabad</span>
+                    </label>
+                  </div>
+                </label>
+                <div class="actions">
+                  <button type="submit" class="btn">Save preferences</button>
+                  <button type="button" id="load-preferences" class="btn ghost">View saved preferences</button>
+                  <button type="button" id="start-recommendations" class="btn ghost">
+                    Start recommendations
+                  </button>
+                </div>
+              </form>
+              <div id="preferences-summary" class="preferences-summary is-hidden"></div>
+            </section>
+            <section class="app-section is-hidden" id="results-section" data-app-panel="results">
+              <div class="results-header">
+                <h4>Initial recommendations</h4>
+                <div class="results-actions">
+                  <span id="properties-count" class="properties-count">No homes yet</span>
+                  <button type="button" id="edit-preferences" class="btn ghost">
+                    Edit preferences
+                  </button>
+                </div>
+              </div>
+              <div id="preferences-summary-results" class="preferences-summary is-hidden"></div>
+              <div class="results-grid">
+                <div class="qa-card">
+                  <h5>Question & Answer</h5>
+                  <p id="qa-empty" class="empty-state">
+                    No conversation yet. Start recommendations to see the summary.
+                  </p>
+                  <div id="qa-content" class="qa-content is-hidden">
+                    <div class="qa-item">
+                      <span class="qa-label">Question</span>
+                      <p id="qa-question" class="qa-text"></p>
+                    </div>
+                    <div class="qa-item">
+                      <span class="qa-label">Answer</span>
+                      <p id="qa-answer" class="qa-text"></p>
+                    </div>
+                  </div>
+                </div>
+                <div class="properties-card">
+                  <h5>Recommended properties</h5>
+                  <div id="properties-list" class="properties-list"></div>
+                </div>
+              </div>
+            </section>
           </div>
         </section>
       </section>
     </main>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
   </body>
 </html>
