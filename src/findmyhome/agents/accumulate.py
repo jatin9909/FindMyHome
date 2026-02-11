@@ -14,16 +14,14 @@ def accumulative_query_agent(state: RecommendationState):
     db_results = db_responses_history[-1] if db_responses_history else []
     
     graph_history_all = state.get("graph_raw_history", [])
-    graph_history = graph_history_all[-1][0] if graph_history_all else []
+    graph_history = graph_history_all[-1] if graph_history_all else []
 
-    graph_props_raw: List[Dict] = []
-    for run in graph_history:
-        if isinstance(run, list):
-            for item in run:
-                if isinstance(item, Dict):
-                    p = item.get("p") or item.get("property") or None
-                    if isinstance(p, Dict):
-                        graph_props_raw.append(p)
+    graph_props_raw = []
+    for item in graph_history:
+        if isinstance(item, dict):
+            p = item.get("p") or item.get("property")
+            if isinstance(p, dict):
+                graph_props_raw.append(p)
 
     db_ids: List[str] = []
     for row in db_results:

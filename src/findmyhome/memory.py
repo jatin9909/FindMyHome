@@ -312,10 +312,11 @@ def clear_specific_memory_data():
         
         # Clear checkpointer keys (these might contain the problematic data)
         checkpoint_keys = redis_client.keys("checkpoint:*")
+        checkpoint_write_keys = redis_client.keys("checkpoint_write:*")
         thread_keys = redis_client.keys("thread:*")
         writes_keys = redis_client.keys("writes:*")
         
-        all_checkpoint_keys = checkpoint_keys + thread_keys + writes_keys
+        all_checkpoint_keys = checkpoint_keys + checkpoint_write_keys + thread_keys + writes_keys
         if all_checkpoint_keys:
             redis_client.delete(*all_checkpoint_keys)
             logger.info(f"Cleared {len(all_checkpoint_keys)} checkpoint entries")
