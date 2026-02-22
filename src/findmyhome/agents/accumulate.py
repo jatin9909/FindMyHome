@@ -75,12 +75,12 @@ You will receive:
 
 Your Task:
 - Provide a holistic, easy-to-read summary covering each property.
-- Use clear bullets or a numbered list.
+- Use clear bullets , numbered list and appropriate '\n' for new line, and <b></b> for bold
 - Emphasize location, type, price, area (sq ft), bedrooms, bathrooms, and standout features.
 - Do not mention internal systems, databases, or where the data came from.
 - Be concise and neutral.
 - There might be some instances where the recommended properties are not directly matches with the user query or helping the user but still you can craft your response in such way to make the recommended properties relevant to the user.
-
+- Do not suggest next steps or propose additional actions. Respond only to the user's current request.
 
 User query: {query_used}
 Previous conversation: {all_user_messages}
