@@ -240,6 +240,9 @@ def get_initial_preferences(
     try:
         # Fetch saved preferences (may be None)
         preferences = get_user_preferences_memory(current_user.id)
+        cities = preferences.get("preferred_cities", "")
+        if isinstance(cities, list):
+            cities = ", ".join(cities)
 
         # Decide thread: reuse or create
         if request.thread_id:
@@ -253,7 +256,9 @@ def get_initial_preferences(
         if preferences:
             seed_query = (
                 "Please recommend properties based on my preferences.\n"
-                f"{preferences}\n"
+                f"Preferences: Budget ₹{preferences.get("min_price")} to ₹{preferences.get("max_price")}\n"
+                f"Area {preferences.get("min_area")}sqft to {preferences.get("max_area")}sqft \n"
+                f"Preferred cities {cities}\n"
                 "Return a helpful list of options."
             )
         else:

@@ -156,9 +156,9 @@ def store_memory(
 
     logger.info(f"Preparing to store memory for user {user_id}: {content}")
 
-    if similar_memory_exists(content, memory_type, user_id):
-        logger.info("Similar memory found, skipping storage")
-        return
+    # if similar_memory_exists(content, memory_type, user_id):
+    #     logger.info("Similar memory found, skipping storage")
+    #     return
 
     try:
         embedding = openai_embed.embed(content)
@@ -281,7 +281,7 @@ def get_user_preferences_memory(user_id: str) -> Optional[Dict[str, Any]]:
     )
     
     if memories:
-        latest = memories[0]
+        latest = memories[-1]
         metadata = latest.metadata
         if metadata:
             try:
