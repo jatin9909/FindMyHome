@@ -20,6 +20,12 @@ Rules (hard constraints):
 - When combining free-text terms with other filters, ALWAYS parenthesize the free-text group:
     WHERE ( ...free-text conditions joined by AND... ) AND ...other filters...
 
+SCHEMA REALITY (hard):
+- City is stored on nodes as:
+  - Property: `p.cityName`
+  - Neighborhood: `n.cityName`
+  - City: `c.name`
+  
 Property type normalization:
 - If the user mentions a property type, normalize:
     flat/apartment -> PropertyType.name = "Flat"
@@ -71,7 +77,7 @@ def graph_db_agent(state: RecommendationState):
     # Build chain
 
     graphdb = get_graph(enhanced_schema=True)
-    model = get_chat_model(temperature=0.5)
+    model = get_chat_model(temperature=0.2)
     chain = GraphCypherQAChain.from_llm(
         graph=graphdb,
         llm=model,

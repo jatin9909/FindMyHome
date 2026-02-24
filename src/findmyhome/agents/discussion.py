@@ -13,7 +13,7 @@ def discussion_agent(state: RecommendationState):
     previous_conversation = state.get("turn_log", []) or []
 
     messages = [
-        SystemMessage(content="""You are a discussion agent that answers user queries based on previously shown property recommendations by graphdb agent and the converation might also include your previous responses.
+        SystemMessage(content="""You are a discussion agent that answers user queries based on previously shown property recommendations by graphdb agent and the conversation might also include your previous responses.
                       You will receive a user query along with the previous conversation context.
 
                         Your task is to:
@@ -51,8 +51,8 @@ def discussion_agent(state: RecommendationState):
                 "question": last_human_text,
                 "answered_by": "discussion_agent",
                 "answer": response_text,
-                "query_used": "Similar to question",
-                "recommended_properties": "No property recommended by discusison agent for the user question",
+                "query_used": last_human_text,
+                "recommended_properties": "No property recommended by discussion agent for the user question, as this was an invalid question or not relevant to property recommendation system",
             }
         ],
     }
