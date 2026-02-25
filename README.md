@@ -1,54 +1,68 @@
 # FindMyHome
-A Multi‑agent based property recommendation system using LangGraph, Neo4j (Graph DataBase), Postgres, Azure OpenAI, and Redis-backed long‑term, short-term memory
-
-## Tech Stack
-• Orchestration: LangGraph
-• LLMs: Azure OpenAI (chat + embeddings) 
-• Graph DB: Neo4j
-• SQL DB: Postgres/Neon; vector similarity using pgvector-compatible array casting
-• Persistence: SQLAlchemy for users/chats; Redis for checkpoints
+<div align="center">
+    <h1><img src="https://github.com/jatin9909/FindMyHome/blob/main/imgs/logo.png" width="400"></h1>
+    <p>
+         <b>A Multi‑agent Chat based Home recommendation system</b>
+    </p>
+</div>
+< need to put working video of recommendation>
 
 ## Architecture
-• Multi-agent graph (LangGraph) in src/findmyhome/workflow.py:
-  • input_agent → validates domain relevance
-  • supervisor → routes to recommendation, discussion, or more results
-  • query_correction → normalizes user intent for graph search
-  • query_enhancer → extracts structured filters for SQL/vector search
-  • graph_db_agent → generates Cypher and queries Neo4j
-  • sql_agent (query_database_agent) → queries Postgres with filters + embedding similarity
-  • accumulative_query_results → merges/dedupes and summarizes unified recommendations
-  • discussion_agent → answers follow‑ups about shown properties
+The multi-agent workflow is implemented in:
+`src/findmyhome/workflow.py`
 
-The Multiagent Architecture Schema using Langgraph
+### Agent Flow Overview
+
+- **[`input_agent`](src/findmyhome/agents/input.py)**  
+  - Validates domain relevance of the user query.
+
+- **[`supervisor`](src/findmyhome/agents/supervisor.py)**  
+  Routes the request to one of:
+  - Recommendation pipeline  
+  - Discussion flow  
+  - More results retrieval  
+
+- **[`query_correction`](src/findmyhome/agents/query_correction.py)**  
+  - Normalizes and refines user intent for graph search.
+
+- **[`query_enhancer`](src/findmyhome/agents/query_enhancer.py)**  
+  Extracts structured filters for:
+  - SQL queries  
+  - Vector similarity search  
+
+- **[`graph_db_agent`](src/findmyhome/agents/graph_agent.py)**  
+  - Generates Cypher queries and interacts with Neo4j.
+
+- **[`query_database`](src/findmyhome/agents/sql_agent.py)**  
+  Queries PostgreSQL using:
+  - Structured filters  
+  - Embedding similarity search  
+  - Rerun the previous graph and sql queries to get more property recommendations.
+
+- **[`accumulate`](src/findmyhome/agents/accumulate.py)**  
+  Merges, deduplicates, and summarizes unified property recommendations.
+
+- **[`discussion`](src/findmyhome/agents/discussion.py)**  
+  Handles follow-up questions about previously shown properties.
+
+**The Multiagent Architecture Schema using Langgraph**
 ![langgraph_multiagent_structure.png](imgs/langgraph_multiagent_structure.png)
 
 ## GraphDB Schema:
 Node properties: <br>
-
-• Property: id, name, totalArea, pricePerSqft, price, beds, baths, hasBalcony, description
-• Neighborhood: name
-• City: name
-• PropertyType: name
-• RoomType: name, rooms
+• Property: id, name, totalArea, pricePerSqft, price, beds, baths, cityName, hasBalcony, description, suburbName <br>
+• Neighborhood: cityName, name <br>
+• City: name <br>
+• PropertyType: name <br>
+• RoomType: name, rooms <br>
 
 Relationships: <br>
+• (:Property)-[:IN_NEIGHBORHOOD]->(:Neighborhood)<br>
+• (:Property)-[:OF_TYPE]->(:PropertyType)<br>
+• (:Property)-[:HAS_LAYOUT]->(:RoomType)<br>
+• (:Neighborhood)-[:PART_OF]->(:City)<br>
 
-• (:Property)-[:IN_NEIGHBORHOOD]->(:Neighborhood)
-• (:Property)-[:OF_TYPE]->(:PropertyType)
-• (:Property)-[:HAS_LAYOUT]->(:RoomType)
-• (:Neighborhood)-[:PART_OF]->(:City)
-
-![Neo_4j_graph_database_schema.png](imgs%2FUntitled%20Diagram%20%281%29.png)
-
-
-## Setup
-
-1) Python 3.10+ and a virtualenv
-2) Copy `.env.example` to `.env` and fill values (Azure OpenAI, Neo4j, Postgres)
-3) Install using requirements.txt:
-```
-pip install -r requirements.txt
-```
+![Neo_4j_graph_database_schema.png](imgs/graphdb.png)
 
 
 ## Running
@@ -82,11 +96,8 @@ docker run -p 8000:8000 --env-file .env findmyhome
 - CI/CD
 GitHub Actions at .github/workflows/main_findmyhome.yml:
 
-• Builds and pushes image to Azure Container Registry
-• Deploys to Azure Web App findmyhome
-
 ## Example Queries
-• “2 BHK in New Delhi under 1 crore with balcony”
-• “Villa in Bangalore with 1200+ sq ft”
-• “More properties like the previous ones”
+• “2 BHK in New Delhi under 1 crore with balcony”<br>
+• “Villa in Bangalore with 1200+ sq ft”<br>
+• “More properties like the previous ones”<br>
 • “What was the price per sqft of the second option?” (discussion mode)
