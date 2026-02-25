@@ -100,5 +100,15 @@ This is the context of the previous conversation, take the previous conversation
 
     model = get_chat_model()
     response = model.invoke(messages)
-    return {"invalid": response.content}
+    return {"invalid": response.content,
+            "turn_log": [
+                {
+                    "question": last_human_text,
+                    "answered_by": "invalid_agent",
+                    "answer": response.content,
+                    "query_used": last_human_text,
+                    "recommended_properties": "No property recommended by invalid agent for the user question, as this was an invalid question or not relevant to property recommendation system",
+                }
+            ],
+            }
 

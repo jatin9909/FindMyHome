@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Union, Dict, Any
+import ast
 from pydantic import BaseModel, Field
 
 from redis import Redis
@@ -155,9 +156,9 @@ def store_memory(
 
     logger.info(f"Preparing to store memory for user {user_id}: {content}")
 
-    if similar_memory_exists(content, memory_type, user_id):
-        logger.info("Similar memory found, skipping storage")
-        return
+    # if similar_memory_exists(content, memory_type, user_id):
+    #     logger.info("Similar memory found, skipping storage")
+    #     return
 
     try:
         embedding = openai_embed.embed(content)
@@ -270,7 +271,7 @@ def store_user_preferences(user_id: str, preferences: UserPreferences):
         metadata=str(metadata)
     )
 
-def get_user_preferences_memory(user_id: str) -> Optional[str]:
+def get_user_preferences_memory(user_id: str) -> Optional[Dict[str, Any]]:
     """Retrieve user preferences from memory."""
     memories = retrieve_memories(
         query="user preferences budget price area cities",
@@ -280,8 +281,23 @@ def get_user_preferences_memory(user_id: str) -> Optional[str]:
     )
     
     if memories:
-        # Return the most recent preference
-        return memories[0].content
+        latest = memories[-1]
+        metadata = latest.metadata
+        if metadata:
+            try:
+                parsed = ast.literal_eval(metadata)
+                if isinstance(parsed, dict):
+                    return {
+                        "min_price": parsed.get("min_price"),
+                        "max_price": parsed.get("max_price"),
+                        "min_area": parsed.get("min_area"),
+                        "max_area": parsed.get("max_area"),
+                        "preferred_cities": parsed.get("cities") or parsed.get("preferred_cities") or [],
+                    }
+            except Exception:
+                pass
+        # Fallback to content string if metadata missing
+        return {"content": latest.content}
     return None 
 
 def clear_all_redis_data():

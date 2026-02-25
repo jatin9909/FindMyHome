@@ -21,7 +21,7 @@ def supervisor_agent(state: RecommendationState):
 
         - If the user is requesting new or updated property recommendations (e.g., changing location, budget, size, etc.), classify it as **recommendation**.
         - If the user is asking a follow-up question about an existing property or seeking clarification based on previously shared results, classify it as **discussion**.
-        - If user is asking for more recommendation of properties, classify it as **more**.
+        - If user is asking for more recommendation of properties, or unhappy with the current recommendation classify it as **more**.
 
         Examples of queries that should be classified as **recommendation**:
         - "Show me villas in South Delhi instead of North Delhi"

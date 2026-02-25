@@ -53,10 +53,10 @@ User's Saved Preferences:
 - room_type
 
 **Allowed Values**:
-- city: `['Chennai', 'Bangalore', 'Hyderabad', 'Mumbai', 'Thane', 'Kolkata', 'Pune', 'New Delhi']`
+- city (list or None): one or more of `['Chennai', 'Bangalore', 'Hyderabad', 'Mumbai', 'Thane', 'Kolkata', 'Pune', 'New Delhi']`
 - has_balcony: `[True, False]`
-- property_type: `['Flat', 'Independent House', 'Villa', 'Studio']`
-- room_type: `['BHK', 'RK', 'R', 'BH']`
+- property_type (list or None): one or more of `['Flat', 'Independent House', 'Villa', 'Studio']`
+- room_type (list or None): one or more of `['BHK', 'RK', 'R', 'BH']`
 
 ---
 
@@ -93,7 +93,8 @@ User's Saved Preferences:
    If the user does not specify something, set its value to `None`.
 
 7. CITY NORMALIZATION & NEARBY MAPPING
-   - Only return one of these in "city": ['Chennai','Bangalore','Hyderabad','Mumbai','Thane','Kolkata','Pune','New Delhi'].
+   - Only return values from this list in "city": ['Chennai','Bangalore','Hyderabad','Mumbai','Thane','Kolkata','Pune','New Delhi'].
+   - "city" must be a list (even if it has only one value).
    - If the user mentions a locality that belongs to a metro region, set "city" to the nearest allowed city AND keep the locality as free-text (do NOT discard it).
      NCR → New Delhi: Gurgaon/Gurugram/Noida/Greater Noida/Ghaziabad/Faridabad/Dwarka/Saket/Rohini/Pitampura...
      Mumbai region: Navi Mumbai → city="Mumbai"; (Thane is already allowed)
@@ -111,6 +112,7 @@ User's Saved Preferences:
 Return: enhanced_user_query, city, has_balcony, min_beds, max_price, min_baths, min_area, property_type, room_type
 - If a mapped city was inferred, include it in enhanced_user_query (“… in <City> …”).
 - If a locality was mentioned, include “near <locality>” in enhanced_user_query.
+ - "city", "property_type", and "room_type" must be lists (or None if missing).
 
 ---
 
@@ -119,28 +121,28 @@ Return: enhanced_user_query, city, has_balcony, min_beds, max_price, min_baths, 
 **Input**: "Show me 2 bhk in south delhi under 1 cr with balcony"
 **Output**:
 {{
-  "enhanced_user_query": "2 BHK Flats in New Delhi priced under 1 crore with a balcony",
-  "city": "New Delhi",
+  "enhanced_user_query": "2 BHK Flats in New Delhi and Mumbai priced under 1 crore with a balcony",
+  "city": ["New Delhi","Mumbai"],
   "has_balcony": true,
   "min_beds": 2,
   "max_price": 10000000,
   "min_baths": None,
   "min_area": None,
-  "property_type": "Flat",
-  "room_type": "BHK"
+  "property_type": ["Flat"],
+  "room_type": ["BHK"]
 }}
 
 **Input**: "Looking for a villa in banglore above 1200 sqft"
 **Output**:
 {{
   "enhanced_user_query": "Villas in Bangalore with a minimum area of 1200 sq ft",
-  "city": "Bangalore",
+  "city": ["Bangalore"],
   "has_balcony": None,
   "min_beds": None,
   "max_price": None,
   "min_baths": None,
   "min_area": 1200,
-  "property_type": "Villa",
+  "property_type": ["Villa"],
   "room_type": None
 }}
 
@@ -155,8 +157,7 @@ Previous conversation for context:
         ),
     ]
 
-    model = get_chat_model(temperature=0.5)
+    model = get_chat_model(temperature=0.2)
     query_enhancer = model.with_structured_output(QueryEnhancer)
     response = query_enhancer.invoke(messages)
     return {"query_enhancer": response}
-

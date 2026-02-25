@@ -20,20 +20,37 @@ def _enhancer_to_dict(enhancer: Any) -> Dict[str, Any]:
         return enhancer
     return {}
 
+def _as_list(value: Any) -> List[str]:
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        items = list(value)
+    else:
+        items = [value]
+    cleaned: List[str] = []
+    for item in items:
+        if item is None:
+            continue
+        s = str(item).strip()
+        if not s:
+            continue
+        cleaned.append(s)
+    return cleaned
+
 def query_database_agent(state: RecommendationState):
     k = 10
     s = get_settings()
 
     enh = _enhancer_to_dict(state.get("query_enhancer"))
     enhanced_user_query: str = enh.get("enhanced_user_query") or ""
-    city: Optional[str]         = enh.get("city")
+    city: List[str]             = _as_list(enh.get("city"))
     has_balcony: Optional[bool] = enh.get("has_balcony")
     min_beds: Optional[int]     = enh.get("min_beds")
     max_price: Optional[float]  = enh.get("max_price")
     min_baths: Optional[int]    = enh.get("min_baths")
     min_area: Optional[float]   = enh.get("min_area")
-    property_type: Optional[str]= enh.get("property_type")
-    room_type: Optional[str]    = enh.get("room_type")
+    property_type: List[str]    = _as_list(enh.get("property_type"))
+    room_type: List[str]        = _as_list(enh.get("room_type"))
 
     q_vec = embed_query(enhanced_user_query or "")
 
@@ -42,8 +59,8 @@ def query_database_agent(state: RecommendationState):
     params: List[Any] = [q_vec]  # first %s used in SELECT score
 
     if city:
-        where.append('"cityName" ILIKE %s')
-        params.append(f"%{city}%")
+        where.append('"cityName" ILIKE ANY(%s)')
+        params.append([f"%{c}%" for c in city])
 
     if has_balcony is not None:
         where.append('"hasBalcony" = %s')
@@ -67,11 +84,11 @@ def query_database_agent(state: RecommendationState):
 
     if property_type:
         # you already normalize upstream; equality is cleaner than ILIKE if canonicalized
-        where.append('property_type = %s')
+        where.append('property_type = ANY(%s)')
         params.append(property_type)
 
     if room_type:
-        where.append('room_type = %s')
+        where.append('room_type = ANY(%s)')
         params.append(room_type)
 
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
@@ -100,7 +117,6 @@ def query_database_agent(state: RecommendationState):
         generated_query = cur.mogrify(sql, params_for_query).decode("utf-8")
 
     recommended_ids = [row["id"] for row in results]
-    print("generated_query - ", generated_query)
 
     return {
         "database_generated_query": generated_query,
@@ -157,17 +173,17 @@ def more_recommendation(state: RecommendationState):
     s = get_settings()
     where: List[str] = []
     params: list = [q_vec]
-    city = enh.get("city")
+    city = _as_list(enh.get("city"))
     has_balcony = enh.get("has_balcony")
     min_beds = enh.get("min_beds")
     max_price = enh.get("max_price")
     min_baths = enh.get("min_baths")
     min_area = enh.get("min_area")
-    property_type = enh.get("property_type")
-    room_type = enh.get("room_type")
+    property_type = _as_list(enh.get("property_type"))
+    room_type = _as_list(enh.get("room_type"))
 
     if city:
-        where.append('"cityName" ILIKE %s');     params.append(f"%{city}%")
+        where.append('"cityName" ILIKE ANY(%s)');     params.append([f"%{c}%" for c in city])
     if has_balcony is not None:
         where.append('"hasBalcony" = %s');       params.append(bool(has_balcony))
     if min_beds is not None:
@@ -179,9 +195,9 @@ def more_recommendation(state: RecommendationState):
     if min_area is not None:
         where.append('"totalArea" >= %s');       params.append(float(min_area))
     if property_type:
-        where.append('property_type ILIKE %s');  params.append(f"%{property_type}%")
+        where.append('property_type = ANY(%s)');  params.append(property_type)
     if room_type:
-        where.append('room_type ILIKE %s');      params.append(f"%{room_type}%")
+        where.append('room_type = ANY(%s)');      params.append(room_type)
 
     # exclude ids
     sql_exclude_ids = list(dict.fromkeys((state.get("database_property_id_shown") or []) + (state.get("graph_property_id_shown") or []) + graph_prop_ids))
@@ -282,4 +298,3 @@ Recommended properties to the user (de-duplicated combined list):
             }
         ],
     }
-

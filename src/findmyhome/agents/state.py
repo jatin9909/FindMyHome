@@ -6,7 +6,7 @@ import operator
 from langgraph.graph import START, END  # re-export convenience
 from langgraph.graph.message import add_messages  # noqa: F401  (used in type annotations)
 from langchain_core.messages import BaseMessage, HumanMessage
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # Pydantic models for structured outputs
@@ -25,14 +25,25 @@ RoomType = Literal['BHK','RK','R','BH']
 
 class QueryEnhancer(BaseModel):
     enhanced_user_query: str
-    city: Optional[City] = None
+    city: Optional[List[City]] = None
     has_balcony: Optional[bool] = None
     min_beds: Optional[int] = None
     max_price: Optional[int] = None
     min_baths: Optional[int] = None
     min_area: Optional[int] = None
-    property_type: Optional[PropertyType] = None
-    room_type: Optional[RoomType] = None
+    property_type: Optional[List[PropertyType]] = None
+    room_type: Optional[List[RoomType]] = None
+
+    @field_validator("city", "property_type", "room_type", mode="before")
+    @classmethod
+    def _coerce_to_list(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, (list, tuple, set)):
+            return list(value)
+        return value
 
 
 class DatabaseRow(TypedDict, total=False):
@@ -58,14 +69,14 @@ PropertyIDList = List[str]
 
 class QueryEnhancerOutput(TypedDict, total=False):
     enhanced_user_query: str
-    city: Optional[City]
+    city: Optional[List[City]]
     has_balcony: Optional[bool]
     min_beds: Optional[int]
     max_price: Optional[int]
     min_baths: Optional[int]
     min_area: Optional[int]
-    property_type: Optional[PropertyType]
-    room_type: Optional[RoomType]
+    property_type: Optional[List[PropertyType]]
+    room_type: Optional[List[RoomType]]
 
 
 class TurnEntry(TypedDict, total=False):
@@ -106,4 +117,3 @@ def latest_human_text(msgs: List[BaseMessage]) -> str:
         if isinstance(m, HumanMessage):
             return m.content
     return ""
-
