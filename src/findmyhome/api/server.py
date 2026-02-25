@@ -27,7 +27,7 @@ app = FastAPI(title="FindMyHome API",
               redoc_url=None if is_prod else "/redoc",
               openapi_url=None if is_prod else "/openapi.json")
 
-if not is_prod:
+if is_prod:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
