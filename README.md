@@ -1,6 +1,6 @@
 # FindMyHome
 <div align="center">
-    <h1><img src="https://github.com/jatin9909/FindMyHome/blob/main/imgs/graphdb.png" width="400"></h1>
+    <h1><img src="https://github.com/jatin9909/FindMyHome/blob/main/imgs/logo.png" width="400"></h1>
     <p>
          <b>A Multi‑agent Chat based Home recommendation system</b>
     </p>
