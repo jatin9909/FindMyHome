@@ -5,7 +5,21 @@
          <b>A Multi‑agent Chat based Home recommendation system</b>
     </p>
 </div>
-< need to put working video of recommendation>
+
+### Watch the Demo
+[Watch the full walkthrough](imgs/findmyhome.mp4)
+
+## Features
+1. Request access
+2. Create an account and sign in
+3. Enter preferences to get initial recommendations
+4. Chat to fetch more results or drill into any property
+5. Start new chats for different searches
+6. Update and refine your preferences anytime
+
+### Note
+1. The number of queries is currently limited to **6 per account**.
+2. Generating recommendations may take **1–2 minutes**, depending on processing time.
 
 ## Architecture
 The multi-agent workflow is implemented in:
