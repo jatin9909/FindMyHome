@@ -12,50 +12,78 @@ from langchain_neo4j import GraphCypherQAChain
 CYPHER_GENERATION_TEMPLATE = """Generate a single Cypher query for Neo4j.
 
 Rules (hard constraints):
-- Start with MATCH and end with `RETURN p`. No prose.
+- Output ONLY the Cypher query. No prose.
+- Start with MATCH and end with `RETURN p`.
 - NEVER use `p.name` in WHERE clauses or equality checks.
   - Do not assign to `p.name`.
   - Do not use `p.name = ...` or `toLower(p.name) CONTAINS ...`.
-- For free-text, USE ONLY `toLower(p.description) CONTAINS ...` and/or neighborhood names (`toLower(n.name) CONTAINS ...`) if you match a neighborhood node.
-- When combining free-text terms with other filters, ALWAYS parenthesize the free-text group:
-    WHERE ( ...free-text conditions joined by AND... ) AND ...other filters...
+
+Free-text rules (hard):
+- For free-text keywords, USE ONLY:
+    `toLower(p.description) CONTAINS "<kw>"`
+  (You may also use `toLower(n.name) CONTAINS "<locality>"` ONLY if the user explicitly provides a locality/neighborhood name.)
+- NEVER guess locality/neighborhood names. Only use `n.name` if user mentioned it.
+- When combining free-text with other filters, ALWAYS wrap the free-text group in parentheses.
 
 SCHEMA REALITY (hard):
 - City is stored on nodes as:
-  - Property: `p.cityName`
-  - Neighborhood: `n.cityName`
-  - City: `c.name`
-  
+  - Property: `p.cityName`  (authoritative for city filtering)
+  - Neighborhood: `n.cityName` (may exist)
+  - City node: `c.name`
+- Many properties may not have `IN_NEIGHBORHOOD` / `PART_OF` relationships. So:
+  - If city/cities are provided, ALWAYS filter by `p.cityName` (mandatory).
+  - You may additionally match Neighborhood/City for context, but NEVER rely only on c.name.
+
+NO-OPTIONAL-FILTER RULE (hard):
+- If a variable is used in WHERE, it MUST come from a mandatory MATCH, never OPTIONAL MATCH.
+- Therefore:
+  - If you need to filter by city using `c.name`, then the City path MUST be `MATCH (p)-[:IN_NEIGHBORHOOD]->(n)-[:PART_OF]->(c)`.
+  - Do NOT use OPTIONAL MATCH for that path.
+- OPTIONAL MATCH is allowed only when the matched variables are NOT used in WHERE (e.g., just for enrichment), but you still must end with `RETURN p`.
+
 Property type normalization:
-- If the user mentions a property type, normalize:
-    flat/apartment -> PropertyType.name = "Flat"
+- If the user mentions a property type, normalize to:
+    flat/apartment -> "Flat"
     villa -> "Villa"
     studio -> "Studio"
     independent house -> "Independent House"
-- Add an OF_TYPE pattern with the normalized value:
-    (p:Property)-[:OF_TYPE]->(pt:PropertyType {{name:"<Normalized>"}})
+- When type is specified, use a mandatory match:
+    MATCH (p:Property)-[:OF_TYPE]->(:PropertyType {{name:"<Normalized>"}})
+- If type is NOT specified, do not match PropertyType.
+
+Room/layout filtering:
+- Only include room/layout matching if user specifies it (e.g., "2 BHK", "1 RK"):
+    MATCH (p)-[:HAS_LAYOUT]->(rt:RoomType)
+  Then filter by rt.name and/or rt.rooms as needed.
+- Do NOT OPTIONAL MATCH room/layout if you will filter on rt.
 
 Structured filtering:
 - Cities allowed: ['Chennai','Bangalore','Hyderabad','Mumbai','Thane','Kolkata','Pune','New Delhi'].
-- Prefer graph relationships for locality/city:
-    (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)-[:PART_OF]->(c:City {{name:"<City>"}})
-  If only a city is given, match City directly as above.
-- Room type:
-    (p)-[:HAS_LAYOUT]->(rt:RoomType {{name:"<RoomType>"}})
-  If rooms count is given (e.g., 2 BHK), add `rt.rooms >= <min_rooms>` (or exact if specified).
-- Numeric filters (use only if present): 
-    p.price <= <max_price>, p.totalArea >= <min_area>, p.beds >= <min_beds>, p.baths >= <min_baths>
-- Balcony: if requested, include `p.hasBalcony = true`.
+- If the user specifies one or more cities, the query MUST include:
+    `toLower(trim(p.cityName)) IN <cities_lower_list>`
+  This is mandatory and is the primary city guardrail.
+- NEVER use OR logic like `(c.name = ... OR p.cityName = ...)`.
+  City constraint must be a single consistent constraint (prefer p.cityName).
+- Use trim+lower for string comparisons.
 
-Free-text mapping:
-- After extracting structured fields (city/neighborhood/property type/room type/price/area), treat remaining tokens (e.g., "near Hinjawadi", "IT city") as keywords.
-- Map metro/locality mentions to graph nodes when possible:
-    - Keep the original token as a free-text keyword (on description) AND, if it corresponds to a neighborhood, also match (n:Neighborhood {{name:"<Locality>"}}) or `toLower(n.name) CONTAINS "<locality_lower>"`.
-- Example free-text group form:
-    (toLower(p.description) CONTAINS "<kw1>" AND toLower(p.description) CONTAINS "<kw2>")
+Neighborhood/locality:
+- If the user explicitly provides a locality/neighborhood name, then:
+    MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)
+  and add:
+    `toLower(n.name) CONTAINS "<locality_lower>"`
+- If city is also specified and you want to validate via graph, then use:
+    MATCH (p)-[:IN_NEIGHBORHOOD]->(n:Neighborhood)-[:PART_OF]->(c:City)
+    AND `toLower(trim(c.name)) IN <cities_lower_list>`
+  Only do this if it does not reduce recall unintentionally.
+
+Numeric filters (use only if present in question):
+- price range: p.price >= <min_price> AND p.price <= <max_price>
+- area range: p.totalArea >= <min_area> AND p.totalArea <= <max_area>
+- beds/baths minimums if requested
+- balcony: p.hasBalcony = true if requested
 
 Operator precedence:
-- When combining free-text with other constraints, wrap the free-text conditions in parentheses before adding AND constraints for city/price/etc.
+- Always parenthesize free-text group before AND-ing other constraints.
 
 Schema:
 {schema}
@@ -82,7 +110,7 @@ def graph_db_agent(state: RecommendationState):
         graph=graphdb,
         llm=model,
         cypher_prompt=CYPHER_PROMPT,
-        verbose=True,
+        verbose=False,
         validate_cypher=True,
         allow_dangerous_requests=True,
         return_intermediate_steps=True,

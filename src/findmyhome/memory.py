@@ -7,6 +7,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Union, Dict, Any
 import ast
+import json
 from pydantic import BaseModel, Field
 
 from redis import Redis
@@ -17,6 +18,15 @@ from redisvl.query.filter import Tag
 from redisvl.utils.vectorize.text.azureopenai import AzureOpenAITextVectorizer
 
 from findmyhome.config import get_settings, embed_query
+from datetime import datetime
+
+def _as_dt(value):
+    if isinstance(value, datetime):
+        return value
+    try:
+        return datetime.fromisoformat(str(value))
+    except Exception:
+        return datetime.min
 
 import math
 import numpy as np
@@ -281,7 +291,7 @@ def get_user_preferences_memory(user_id: str) -> Optional[Dict[str, Any]]:
     )
     
     if memories:
-        latest = memories[-1]
+        latest = max(memories, key=lambda m: _as_dt(m.created_at))
         metadata = latest.metadata
         if metadata:
             try:
