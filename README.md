@@ -1,4 +1,4 @@
-# FindMyHome
+# FindMyHome 🏠
 <div align="center">
     <h1><img src="https://github.com/jatin9909/FindMyHome/blob/main/imgs/logo.png" width="400"></h1>
     <p>
@@ -6,10 +6,15 @@
     </p>
 </div>
 
-### Watch the Demo
-[Watch the full walkthrough](imgs/findmyhome.mp4)
+## 🎥 Watch the Demo
+See how the project works in action:
+👉 [Watch the Demo Video](https://drive.google.com/file/d/1LOE5pmrk5grDyZOAMTa-2Xr20h40n7KJ/view?usp=sharing)
+---
+## 🚀 Try the Product
+Experience it live:
+👉 [FindMyHome](https://findmyhome-flax.vercel.app/)
 
-## Features
+## Features ✨
 1. Request access
 2. Create an account and sign in
 3. Enter preferences to get initial recommendations
@@ -17,15 +22,15 @@
 5. Start new chats for different searches
 6. Update and refine your preferences anytime
 
-### Note
+### Note 📌
 1. The number of queries is currently limited to **6 per account**.
 2. Generating recommendations may take **1–2 minutes**, depending on processing time.
 
-## Architecture
+## Architecture 🧠
 The multi-agent workflow is implemented in:
 `src/findmyhome/workflow.py`
 
-### Agent Flow Overview
+### Agent Flow Overview 🔄
 
 - **[`input_agent`](src/findmyhome/agents/input.py)**  
   - Validates domain relevance of the user query.
@@ -62,7 +67,7 @@ The multi-agent workflow is implemented in:
 **The Multiagent Architecture Schema using Langgraph**
 ![langgraph_multiagent_structure.png](imgs/langgraph_multiagent_structure.png)
 
-## GraphDB Schema:
+## GraphDB Schema: 🗄️
 Node properties: <br>
 • Property: id, name, totalArea, pricePerSqft, price, beds, baths, cityName, hasBalcony, description, suburbName <br>
 • Neighborhood: cityName, name <br>
@@ -79,7 +84,7 @@ Relationships: <br>
 ![Neo_4j_graph_database_schema.png](imgs/graphdb.png)
 
 
-## Running
+## Running ▶️
 
 - CLI (interactive chat):
 ```
@@ -110,8 +115,9 @@ docker run -p 8000:8000 --env-file .env findmyhome
 - CI/CD
 GitHub Actions at .github/workflows/main_findmyhome.yml:
 
-## Example Queries
+## Example Queries 💬
 • “2 BHK in New Delhi under 1 crore with balcony”<br>
 • “Villa in Bangalore with 1200+ sq ft”<br>
 • “More properties like the previous ones”<br>
 • “What was the price per sqft of the second option?” (discussion mode)
+
