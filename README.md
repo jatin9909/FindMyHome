@@ -65,7 +65,7 @@ The multi-agent workflow is implemented in:
   Handles follow-up questions about previously shown properties.
 
 **The Multiagent Architecture Schema using Langgraph**
-![langgraph_multiagent_structure.png](imgs/langgraph_multiagent_structure.png)
+<img src="imgs/langgraph_multiagent_structure.png" width="500" />
 
 ## GraphDB Schema: 🗄️
 Node properties: <br>
